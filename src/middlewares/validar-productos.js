@@ -18,15 +18,29 @@ function responderDatosInvalidos(res, message) {
   return res.status(400).json({ error: { message } });
 }
 
+function esIdValido(id) {
+  return Number.isInteger(id) && id >= 1 && id <= ID_MAXIMO;
+}
+
 function validarId(req, res, next) {
-  const { id } = req.params;
+  const id = req.params.id ?? req.params.productoId;
   const numero = Number(id);
 
-  if (!/^[1-9]\d*$/.test(id) || numero > ID_MAXIMO) {
+  if (!/^[1-9]\d*$/.test(id) || !esIdValido(numero)) {
     return responderDatosInvalidos(res, 'El id debe ser un entero entre 1 y 2147483647.');
   }
 
   res.locals.productoId = numero;
+  return next();
+}
+
+function validarProductoIdEnCuerpo(req, res, next) {
+  const { productoId } = req.body ?? {};
+  if (!esIdValido(productoId)) {
+    return responderDatosInvalidos(res, 'El productoId debe ser un entero entre 1 y 2147483647.');
+  }
+
+  res.locals.productoId = productoId;
   return next();
 }
 
@@ -73,4 +87,4 @@ function validarProducto(req, res, next) {
   return next();
 }
 
-module.exports = { validarId, validarCategoria, validarProducto };
+module.exports = { validarId, validarProductoIdEnCuerpo, validarCategoria, validarProducto };
