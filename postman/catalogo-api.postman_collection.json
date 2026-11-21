@@ -1,0 +1,2113 @@
+{
+  "info": {
+    "name": "Catálogo de productos API · Fase 6",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Selecciona el entorno de ejemplo y rellena adminCorreo y adminContrasena de forma local. Ejecuta las carpetas en su orden, con las peticiones [Manual] desmarcadas. Completa CP-25 después de reiniciar Node.js y CP-16 con una vigencia temporal de 30 segundos."
+  },
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "CP-01 Registrar usuario A",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/registro",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario A\",\n  \"correo\": \"{{correoA}}\",\n  \"contrasena\": \"{{contrasenaPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const clave of [\"marca\",\"correoA\",\"correoB\",\"contrasenaPrueba\",\"usuarioAId\",\"usuarioBId\",\"tokenA\",\"tokenB\",\"tokenAdmin\",\"productoCrudId\",\"productoFavoritoId\",\"productoPersistenciaId\",\"tokenBreve\",\"expBreve\",\"breveAceptado\"]) pm.environment.set(clave, '');",
+                  "const marca = pm.variables.replaceIn('{{$guid}}').toLowerCase();",
+                  "pm.environment.set('marca', marca);",
+                  "pm.environment.set('correoA', 'fase6.a.' + marca + '@example.test');",
+                  "pm.environment.set('correoB', 'fase6.b.' + marca + '@example.test');",
+                  "pm.environment.set('contrasenaPrueba', 'Clave-' + marca);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const usuario = respuesta.data;",
+                  "  pm.expect(usuario).to.have.all.keys('id', 'nombre', 'correo', 'rol');",
+                  "  pm.expect(Number.isInteger(usuario.id) && usuario.id > 0).to.equal(true);",
+                  "  pm.expect(usuario.nombre).to.equal('Usuario A');",
+                  "  pm.expect(usuario.correo).to.equal(pm.environment.get('correoA'));",
+                  "  pm.expect(usuario.rol).to.equal('usuario');",
+                  "  pm.environment.set('usuarioAId', String(usuario.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-02 Rechazar correo duplicado",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/registro",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario A\",\n  \"correo\": \"{{correoA}}\",\n  \"contrasena\": \"{{contrasenaPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 409', function () {",
+                  "  pm.expect(pm.response.code).to.equal(409);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"El correo ya está registrado.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-27 Registrar B solicitando rol administrador",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/registro",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario B\",\n  \"correo\": \"{{correoB}}\",\n  \"contrasena\": \"{{contrasenaPrueba}}\",\n  \"rol\": \"administrador\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const usuario = respuesta.data;",
+                  "  pm.expect(usuario).to.have.all.keys('id', 'nombre', 'correo', 'rol');",
+                  "  pm.expect(Number.isInteger(usuario.id) && usuario.id > 0).to.equal(true);",
+                  "  pm.expect(usuario.nombre).to.equal('Usuario B');",
+                  "  pm.expect(usuario.correo).to.equal(pm.environment.get('correoB'));",
+                  "  pm.expect(usuario.rol).to.equal('usuario');",
+                  "  pm.environment.set('usuarioBId', String(usuario.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Login usuario A",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoA}}\",\n  \"contrasena\": \"{{contrasenaPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('usuario', 'token');",
+                  "  const { usuario, token } = respuesta.data;",
+                  "  pm.expect(usuario).to.have.all.keys('id', 'nombre', 'correo', 'rol');",
+                  "  pm.expect(Number.isInteger(usuario.id) && usuario.id > 0).to.equal(true);",
+                  "  pm.expect(usuario.rol).to.equal('usuario');",
+                  "  pm.expect(token).to.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/);",
+                  "  pm.expect(usuario.correo).to.equal(pm.environment.get('correoA'));",
+                  "  pm.expect(usuario.id).to.equal(Number(pm.environment.get('usuarioAId')));",
+                  "  pm.environment.set('tokenA', token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Login usuario B",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoB}}\",\n  \"contrasena\": \"{{contrasenaPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('usuario', 'token');",
+                  "  const { usuario, token } = respuesta.data;",
+                  "  pm.expect(usuario).to.have.all.keys('id', 'nombre', 'correo', 'rol');",
+                  "  pm.expect(Number.isInteger(usuario.id) && usuario.id > 0).to.equal(true);",
+                  "  pm.expect(usuario.rol).to.equal('usuario');",
+                  "  pm.expect(token).to.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/);",
+                  "  pm.expect(usuario.correo).to.equal(pm.environment.get('correoB'));",
+                  "  pm.expect(usuario.id).to.equal(Number(pm.environment.get('usuarioBId')));",
+                  "  pm.environment.set('tokenB', token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-03 Login administrador",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{cuerpoAdmin}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const correo = pm.environment.get('adminCorreo');",
+                  "const contrasena = pm.environment.get('adminContrasena');",
+                  "pm.variables.set('cuerpoAdmin', JSON.stringify({ correo, contrasena }));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('usuario', 'token');",
+                  "  const { usuario, token } = respuesta.data;",
+                  "  pm.expect(usuario).to.have.all.keys('id', 'nombre', 'correo', 'rol');",
+                  "  pm.expect(Number.isInteger(usuario.id) && usuario.id > 0).to.equal(true);",
+                  "  pm.expect(usuario.rol).to.equal('administrador');",
+                  "  pm.expect(token).to.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/);",
+                  "  pm.expect(usuario.correo).to.equal(pm.environment.get('adminCorreo').trim().toLowerCase());",
+                  "  pm.environment.set('tokenAdmin', token);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-04 Rechazar credenciales incorrectas",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoA}}\",\n  \"contrasena\": \"incorrecta\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', function () {",
+                  "  pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Correo o contraseña incorrectos.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "item": [
+        {
+          "name": "CP-08 Crear producto como administrador",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"CRUD {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 19.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const p = respuesta.data;",
+                  "  pm.expect(p).to.have.all.keys('id', 'nombre', 'descripcion', 'categoria', 'precio');",
+                  "  pm.expect(Number.isInteger(p.id) && p.id > 0).to.equal(true);",
+                  "  pm.expect(p.nombre).to.equal(pm.variables.replaceIn(\"CRUD {{marca}}\"));",
+                  "  pm.expect(p.descripcion).to.equal(\"Producto ficticio de Postman.\");",
+                  "  pm.expect(p.categoria).to.equal(pm.variables.replaceIn(\"postman-{{marca}}\"));",
+                  "  pm.expect(p.precio).to.equal('19.90');",
+                  "  pm.environment.set('productoCrudId', String(p.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-05 Listar productos sin token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.be.an('array');",
+                  "  pm.expect(respuesta.data.some(p => p.id === Number(pm.environment.get('productoCrudId')))).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-06 Consultar producto individual",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/productos/{{productoCrudId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const p = respuesta.data;",
+                  "  pm.expect(p).to.have.all.keys('id', 'nombre', 'descripcion', 'categoria', 'precio');",
+                  "  pm.expect(Number.isInteger(p.id) && p.id > 0).to.equal(true);",
+                  "  pm.expect(p.nombre).to.equal(pm.variables.replaceIn(\"CRUD {{marca}}\"));",
+                  "  pm.expect(p.descripcion).to.equal(\"Producto ficticio de Postman.\");",
+                  "  pm.expect(p.categoria).to.equal(pm.variables.replaceIn(\"postman-{{marca}}\"));",
+                  "  pm.expect(p.precio).to.equal('19.90');",
+                  "  pm.expect(p.id).to.equal(Number(pm.environment.get('productoCrudId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-07 Filtrar por categoría",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/productos?categoria=postman-{{marca}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.be.an('array').with.lengthOf(1);",
+                  "  pm.expect(respuesta.data[0].categoria).to.equal(pm.variables.replaceIn('postman-{{marca}}'));",
+                  "  pm.expect(respuesta.data[0].id).to.equal(Number(pm.environment.get('productoCrudId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-09 Actualizar producto como administrador",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/productos/{{productoCrudId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"CRUD actualizado {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 24.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const p = respuesta.data;",
+                  "  pm.expect(p).to.have.all.keys('id', 'nombre', 'descripcion', 'categoria', 'precio');",
+                  "  pm.expect(Number.isInteger(p.id) && p.id > 0).to.equal(true);",
+                  "  pm.expect(p.nombre).to.equal(pm.variables.replaceIn(\"CRUD actualizado {{marca}}\"));",
+                  "  pm.expect(p.descripcion).to.equal(\"Producto ficticio de Postman.\");",
+                  "  pm.expect(p.categoria).to.equal(pm.variables.replaceIn(\"postman-{{marca}}\"));",
+                  "  pm.expect(p.precio).to.equal('24.50');",
+                  "  pm.expect(p.id).to.equal(Number(pm.environment.get('productoCrudId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-10 Eliminar producto como administrador",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/productos/{{productoCrudId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('id');",
+                  "  pm.expect(respuesta.data.id).to.equal(Number(pm.environment.get('productoCrudId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Favoritos",
+      "item": [
+        {
+          "name": "Preparar producto para favoritos",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Favoritos {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 15.25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const p = respuesta.data;",
+                  "  pm.expect(p).to.have.all.keys('id', 'nombre', 'descripcion', 'categoria', 'precio');",
+                  "  pm.expect(Number.isInteger(p.id) && p.id > 0).to.equal(true);",
+                  "  pm.expect(p.nombre).to.equal(pm.variables.replaceIn(\"Favoritos {{marca}}\"));",
+                  "  pm.expect(p.descripcion).to.equal(\"Producto ficticio de Postman.\");",
+                  "  pm.expect(p.categoria).to.equal(pm.variables.replaceIn(\"postman-{{marca}}\"));",
+                  "  pm.expect(p.precio).to.equal('15.25');",
+                  "  pm.environment.set('productoFavoritoId', String(p.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-18 Agregar favorito de A",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": {{productoFavoritoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('productoId');",
+                  "  pm.expect(respuesta.data.productoId).to.equal(Number(pm.environment.get('productoFavoritoId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-19 Listar favoritos de A",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.be.an('array');",
+                  "  pm.expect(respuesta.data.some(p => p.id === Number(pm.environment.get('productoFavoritoId')))).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-21 Rechazar favorito duplicado",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": {{productoFavoritoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 409', function () {",
+                  "  pm.expect(pm.response.code).to.equal(409);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"El producto ya está en tus favoritos.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-20 Eliminar favorito propio de A",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/favoritos/{{productoFavoritoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('productoId');",
+                  "  pm.expect(respuesta.data.productoId).to.equal(Number(pm.environment.get('productoFavoritoId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-20 Confirmar lista de A vacía tras borrado",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.deep.equal([]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validaciones y errores",
+      "item": [
+        {
+          "name": "CP-11 Rechazar precio cero",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"CRUD {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', function () {",
+                  "  pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"El precio debe ser un número mayor que cero, con hasta 10 cifras enteras y 2 decimales.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-12 Rechazar campos vacíos",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \" \",\n  \"descripcion\": \"\",\n  \"categoria\": \"\",\n  \"precio\": 19.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 400', function () {",
+                  "  pm.expect(pm.response.code).to.equal(400);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Nombre, descripción y categoría son obligatorios. El nombre admite hasta 120 caracteres y la categoría hasta 80.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-13 Consultar producto eliminado",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/productos/{{productoCrudId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 404', function () {",
+                  "  pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Producto no encontrado.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-22 Rechazar producto inexistente como favorito",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": {{productoCrudId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 404', function () {",
+                  "  pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Producto no encontrado.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Seguridad y permisos",
+      "item": [
+        {
+          "name": "CP-14 Rechazar escritura sin token",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"CRUD {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 19.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', function () {",
+                  "  pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Token ausente, inválido o vencido.\");",
+                  "pm.expect(pm.response.headers.get('WWW-Authenticate')).to.equal('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-14 Rechazar favoritos sin token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', function () {",
+                  "  pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Token ausente, inválido o vencido.\");",
+                  "pm.expect(pm.response.headers.get('WWW-Authenticate')).to.equal('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-15 Rechazar token inválido",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "token-invalido",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', function () {",
+                  "  pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Token ausente, inválido o vencido.\");",
+                  "pm.expect(pm.response.headers.get('WWW-Authenticate')).to.equal('Bearer');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-17 Usuario normal no puede crear",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"CRUD {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 19.9\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 403', function () {",
+                  "  pm.expect(pm.response.code).to.equal(403);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Tu rol no permite esta operación.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-17 Usuario normal no puede actualizar",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/productos/{{productoFavoritoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"CRUD actualizado {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 24.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 403', function () {",
+                  "  pm.expect(pm.response.code).to.equal(403);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Tu rol no permite esta operación.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-17 Usuario normal no puede borrar",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/productos/{{productoFavoritoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 403', function () {",
+                  "  pm.expect(pm.response.code).to.equal(403);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Tu rol no permite esta operación.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Manual] CP-16a Obtener JWT de 30 segundos",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/auth/login",
+            "auth": {
+              "type": "noauth"
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"{{correoA}}\",\n  \"contrasena\": \"{{contrasenaPrueba}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "for (const clave of ['tokenBreve', 'expBreve', 'breveAceptado']) pm.environment.set(clave, '');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('usuario', 'token');",
+                  "  const { usuario, token } = respuesta.data;",
+                  "  pm.expect(usuario).to.have.all.keys('id', 'nombre', 'correo', 'rol');",
+                  "  pm.expect(Number.isInteger(usuario.id) && usuario.id > 0).to.equal(true);",
+                  "  pm.expect(usuario.rol).to.equal('usuario');",
+                  "  pm.expect(token).to.match(/^[\\w-]+\\.[\\w-]+\\.[\\w-]+$/);",
+                  "  pm.expect(usuario.id).to.equal(Number(pm.environment.get('usuarioAId')));",
+                  "  const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');",
+                  "  const payload = JSON.parse(require('buffer').Buffer.from(base64, 'base64').toString('utf8'));",
+                  "  pm.expect(payload.sub).to.equal(String(usuario.id));",
+                  "  pm.expect(payload.exp - payload.iat).to.equal(30);",
+                  "  pm.environment.set('tokenBreve', token);",
+                  "  pm.environment.set('expBreve', String(payload.exp));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Manual] CP-16b Aceptar el mismo JWT antes del vencimiento",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenBreve}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.be.an('array');",
+                  "  pm.expect(pm.environment.get('tokenBreve')).to.be.a('string').and.not.empty;",
+                  "  pm.environment.set('breveAceptado', 'si');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Manual] CP-16c Rechazar ese JWT después de vencer",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenBreve}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 401', function () {",
+                  "  pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Token ausente, inválido o vencido.\");",
+                  "pm.expect(pm.response.headers.get('WWW-Authenticate')).to.equal('Bearer');",
+                  "  pm.expect(pm.environment.get('breveAceptado')).to.equal('si');",
+                  "  const exp = Number(pm.environment.get('expBreve'));",
+                  "  pm.expect(exp).to.be.above(0);",
+                  "  pm.expect(Math.floor(Date.now() / 1000)).to.be.at.least(exp);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Aislamiento entre usuarios",
+      "item": [
+        {
+          "name": "CP-23 Preparar favorito de A",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": {{productoFavoritoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('productoId');",
+                  "  pm.expect(respuesta.data.productoId).to.equal(Number(pm.environment.get('productoFavoritoId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-23 B no puede listar el favorito de A",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos?usuarioId={{usuarioAId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.deep.equal([]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-23 B no puede borrar el favorito de A",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/favoritos/{{productoFavoritoId}}?usuarioId={{usuarioAId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 404', function () {",
+                  "  pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Favorito no encontrado.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-24 A conserva su favorito",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.be.an('array');",
+                  "  pm.expect(respuesta.data.some(p => p.id === Number(pm.environment.get('productoFavoritoId')))).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-26 B guarda el mismo producto en su cuenta",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": {{productoFavoritoId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('productoId');",
+                  "  pm.expect(respuesta.data.productoId).to.equal(Number(pm.environment.get('productoFavoritoId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-26 Administrador elimina el producto de ambas cuentas",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/productos/{{productoFavoritoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('id');",
+                  "  pm.expect(respuesta.data.id).to.equal(Number(pm.environment.get('productoFavoritoId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-26 Lista de A vacía tras la cascada",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.deep.equal([]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-26 Lista de B vacía tras la cascada",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.deep.equal([]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-26 Favorito de A ya no existe en la tabla",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/favoritos/{{productoFavoritoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 404', function () {",
+                  "  pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Favorito no encontrado.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-26 Favorito de B ya no existe en la tabla",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/favoritos/{{productoFavoritoId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenB}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 404', function () {",
+                  "  pm.expect(pm.response.code).to.equal(404);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta).to.have.all.keys('error');",
+                  "pm.expect(respuesta.error.message).to.equal(\"Favorito no encontrado.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Persistencia",
+      "item": [
+        {
+          "name": "CP-25a Guardar producto antes del reinicio",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/productos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Persistencia {{marca}}\",\n  \"descripcion\": \"Producto ficticio de Postman.\",\n  \"categoria\": \"postman-{{marca}}\",\n  \"precio\": 32.8\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const p = respuesta.data;",
+                  "  pm.expect(p).to.have.all.keys('id', 'nombre', 'descripcion', 'categoria', 'precio');",
+                  "  pm.expect(Number.isInteger(p.id) && p.id > 0).to.equal(true);",
+                  "  pm.expect(p.nombre).to.equal(pm.variables.replaceIn(\"Persistencia {{marca}}\"));",
+                  "  pm.expect(p.descripcion).to.equal(\"Producto ficticio de Postman.\");",
+                  "  pm.expect(p.categoria).to.equal(pm.variables.replaceIn(\"postman-{{marca}}\"));",
+                  "  pm.expect(p.precio).to.equal('32.80');",
+                  "  pm.environment.set('productoPersistenciaId', String(p.id));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CP-25b Guardar favorito antes del reinicio",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": {{productoPersistenciaId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 201', function () {",
+                  "  pm.expect(pm.response.code).to.equal(201);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('productoId');",
+                  "  pm.expect(respuesta.data.productoId).to.equal(Number(pm.environment.get('productoPersistenciaId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Manual] CP-25c Consultar producto después del reinicio",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/productos/{{productoPersistenciaId}}",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  const p = respuesta.data;",
+                  "  pm.expect(p).to.have.all.keys('id', 'nombre', 'descripcion', 'categoria', 'precio');",
+                  "  pm.expect(Number.isInteger(p.id) && p.id > 0).to.equal(true);",
+                  "  pm.expect(p.nombre).to.equal(pm.variables.replaceIn(\"Persistencia {{marca}}\"));",
+                  "  pm.expect(p.descripcion).to.equal(\"Producto ficticio de Postman.\");",
+                  "  pm.expect(p.categoria).to.equal(pm.variables.replaceIn(\"postman-{{marca}}\"));",
+                  "  pm.expect(p.precio).to.equal('32.80');",
+                  "  pm.expect(p.id).to.equal(Number(pm.environment.get('productoPersistenciaId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Manual] CP-25d Consultar favorito después del reinicio",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/favoritos",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenA}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  pm.expect(respuesta.data).to.be.an('array');",
+                  "  pm.expect(respuesta.data.some(p => p.id === Number(pm.environment.get('productoPersistenciaId')))).to.equal(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[Manual] CP-25e Limpiar producto de persistencia",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/productos/{{productoPersistenciaId}}",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{tokenAdmin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Estado HTTP 200', function () {",
+                  "  pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "pm.test('Campos y contenido de la respuesta', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "  const respuesta = pm.response.json();",
+                  "  ",
+                  "  pm.expect(respuesta.data).to.have.all.keys('id');",
+                  "  pm.expect(respuesta.data.id).to.equal(Number(pm.environment.get('productoPersistenciaId')));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
